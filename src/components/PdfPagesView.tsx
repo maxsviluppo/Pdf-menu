@@ -1,758 +1,693 @@
 import React, { useState } from "react";
 import { CoralHeader, CoralFooter } from "./MarineDecor";
-import { ChevronLeft, ChevronRight, Grid, BookOpen, Clock, Phone, Sparkles } from "lucide-react";
+import { MENU_ITEMS, CATEGORIES } from "../data/menuData";
+import { MenuItem } from "../types";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Grid, 
+  BookOpen, 
+  ZoomIn, 
+  ZoomOut, 
+  Download, 
+  Printer, 
+  Search, 
+  Share2, 
+  Sparkles,
+  Award,
+  Calendar,
+  Waves,
+  MapPin,
+  Clock,
+  Phone,
+  FileText
+} from "lucide-react";
+
+// Structure our brochure pages to pull items dynamically
+interface PageStructure {
+  pageNumber: number;
+  title: string;
+  subtitle?: string;
+  type: "cover" | "info" | "items";
+  categories?: string[];
+  showPromoCard?: boolean;
+}
+
+const BROCHURE_PAGES: PageStructure[] = [
+  { 
+    pageNumber: 1, 
+    title: "Copertina", 
+    type: "cover" 
+  },
+  { 
+    pageNumber: 2, 
+    title: "Benvenuto & Servizi", 
+    type: "info" 
+  },
+  { 
+    pageNumber: 3, 
+    title: "Bar Caffetteria", 
+    subtitle: "Inizia la giornata al meglio o concediti una fresca pausa relax",
+    type: "items", 
+    categories: ["bar_caffetteria"] 
+  },
+  { 
+    pageNumber: 4, 
+    title: "Bibite & Stuzzichini", 
+    subtitle: "Bibite fresche, cole, tè freddi e le golose patatine San Carlo",
+    type: "items", 
+    categories: ["bibite", "patatine"] 
+  },
+  { 
+    pageNumber: 5, 
+    title: "Pasticceria & Rosticceria", 
+    subtitle: "Cornetti caldi, squisiti pasticciotti leccesi e rustici salati",
+    type: "items", 
+    categories: ["pasticceria_rosticceria"] 
+  },
+  { 
+    pageNumber: 6, 
+    title: "Birre & Liquori", 
+    subtitle: "Pregiate birre fresche nazionali e estere, amari tradizionali",
+    type: "items", 
+    categories: ["birre", "liquori_amari"] 
+  },
+  { 
+    pageNumber: 7, 
+    title: "Bottiglie & Bollicine", 
+    subtitle: "Selezionata cantina di spumanti, prosecco doc e pregiati vini locali",
+    type: "items", 
+    categories: ["bottiglie"] 
+  },
+  { 
+    pageNumber: 8, 
+    title: "Cocktail d'Autore", 
+    subtitle: "Dai freschi Sprit-z ai cocktail tropicali per il tuo aperitivo perfetto",
+    type: "items", 
+    categories: ["cocktail_aperitivi"] 
+  },
+  { 
+    pageNumber: 9, 
+    title: "I Gelati Algida", 
+    subtitle: "Magnum speciali, biscotti Cucciolone e l'intramontabile Cornetto",
+    type: "items", 
+    categories: ["gelati_algida"] 
+  },
+  { 
+    pageNumber: 10, 
+    title: "I Gelati Sammontana", 
+    subtitle: "Gruvi d'autore, Coppa Oro e i freschissimi ghiaccioli alla frutta",
+    type: "items", 
+    categories: ["gelati_sammontana"] 
+  },
+  { 
+    pageNumber: 11, 
+    title: "Torte & Varie", 
+    subtitle: "Viennette, torte gelato, accendini, carte francesi e napoletane",
+    type: "items", 
+    categories: ["altri_gelati", "varie"],
+    showPromoCard: true 
+  }
+];
 
 export const PdfPagesView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"book" | "grid">("book");
-  const totalPages = 8;
+  const [zoom, setZoom] = useState(1.0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activePromoModal, setActivePromoModal] = useState(false);
 
-  const nextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  // Page navigation logic
+  const handleNext = () => {
+    if (currentPage < BROCHURE_PAGES.length) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
-  const prevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  const handlePrev = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Zoom controls
+  const handleZoomIn = () => {
+    if (zoom < 1.3) setZoom(prev => Math.min(prev + 0.15, 1.3));
+  };
+
+  const handleZoomOut = () => {
+    if (zoom > 0.7) setZoom(prev => Math.max(prev - 0.15, 0.7));
+  };
+
+  // Browser print action
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Simulated download menu items catalog action
+  const handleDownload = () => {
+    let textContent = "★ LISTINO PREZZI MOLO 18 - BAIA AZZURRA 2026 ★\n\n";
+    MENU_ITEMS.forEach(it => {
+      const catLabel = CATEGORIES.find(c => c.id === it.category)?.label || it.category;
+      textContent += `[${catLabel}] ${it.name} - Banco: €${it.bancoPrice.toFixed(2)}`;
+      if (it.tavoloPrice !== undefined) {
+        textContent += ` | Tavolo: €${it.tavoloPrice.toFixed(2)}`;
+      }
+      textContent += "\n";
+    });
+
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "Molo18_Menu_2026.txt";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="w-full">
-      {/* View Controller Top Toolbar */}
-      <div className="max-w-4xl mx-auto px-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="text-gray-500 text-xs sm:text-sm">
-          {viewMode === "book" ? (
-            <p className="flex items-center gap-2 font-semibold">
-              <BookOpen className="w-4 h-4 text-black" />
-              <span>SFOGLIA BROCHURE: Pagina <strong className="text-black font-bold">{currentPage}</strong> di {totalPages}</span>
-            </p>
-          ) : (
-            <p className="flex items-center gap-2 font-semibold">
-              <Grid className="w-4 h-4 text-black" />
-              <span>VISTA PANORAMICA: {totalPages} pagg. stese</span>
-            </p>
-          )}
+    <div className="w-full bg-gray-150 border border-gray-250 rounded-lg shadow-inner overflow-hidden select-none">
+      
+      {/* 1. PDF CONTROL HEADER BAR */}
+      <div className="bg-white border-b border-gray-250 py-3 px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-3 relative z-30">
+        
+        {/* PDF Metadata Logo */}
+        <div className="flex items-center space-x-2.5 shrink-0 self-start md:self-auto">
+          <div className="bg-black text-white p-1.5 rounded-sm font-mono font-bold text-xs tracking-tight flex items-center">
+            <FileText className="w-4 h-4 mr-1 text-white" />
+            PDF
+          </div>
+          <div className="text-left">
+            <span className="block font-sans text-xs font-black text-gray-900 tracking-tight leading-none uppercase">
+              Molo_18_Menu_Brochure_2026.pdf
+            </span>
+            <span className="block text-[9px] text-gray-400 font-mono">
+              Vector high-fidelity • 11 Pagine • Sincronizzato
+            </span>
+          </div>
         </div>
 
-        {/* Mode Toggles */}
-        <div className="bg-white p-1 rounded-md flex space-x-1 border border-gray-200 shadow-3xs">
+        {/* Center Page Controller */}
+        <div className="flex items-center space-x-1.5 bg-gray-50 border border-gray-200 rounded p-1">
           <button
-            onClick={() => setViewMode("book")}
-            className={`px-3.5 py-1.5 rounded-sm text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
-              viewMode === "book"
-                ? "bg-black text-white shadow-sm"
-                : "text-gray-500 hover:text-black hover:bg-gray-50"
-            }`}
-            id="mode-book-btn"
+            onClick={handlePrev}
+            disabled={currentPage === 1 || viewMode === "grid"}
+            className="p-1 px-2.5 rounded hover:bg-white text-gray-700 disabled:opacity-25 disabled:cursor-not-allowed hover:shadow-2xs duration-150 transition-all text-xs font-bold"
+            title="Pagina Precedente"
           >
-            <span>📖 Pagina Singola</span>
+            <ChevronLeft className="w-4 h-4 inline" /> Prec.
           </button>
+          
+          <span className="text-xs font-mono font-extrabold text-gray-900 px-3">
+            {viewMode === "book" ? `${currentPage} / ${BROCHURE_PAGES.length}` : "TUTTE"}
+          </span>
+
           <button
-            onClick={() => setViewMode("grid")}
-            className={`px-3.5 py-1.5 rounded-sm text-xs font-bold flex items-center space-x-1.5 transition-all cursor-pointer ${
-              viewMode === "grid"
-                ? "bg-black text-white shadow-sm"
-                : "text-gray-500 hover:text-black hover:bg-gray-50"
-            }`}
-            id="mode-grid-btn"
+            onClick={handleNext}
+            disabled={currentPage === BROCHURE_PAGES.length || viewMode === "grid"}
+            className="p-1 px-2.5 rounded hover:bg-white text-gray-700 disabled:opacity-25 disabled:cursor-not-allowed hover:shadow-2xs duration-150 transition-all text-xs font-bold"
+            title="Pagina Successiva"
           >
-            <span>⊞ Pagine Stese</span>
+            Succ. <ChevronRight className="w-4 h-4 inline" />
           </button>
+        </div>
+
+        {/* Right Tools - Search, Zoom, Print and Layout View Swapper */}
+        <div className="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto">
+          
+          {/* Zoom controls */}
+          {viewMode === "book" && (
+            <div className="hidden sm:flex items-center space-x-1 bg-gray-50 border border-gray-200 rounded p-1">
+              <button
+                onClick={handleZoomOut}
+                className="p-1 hover:bg-white rounded text-gray-650"
+                title="Riduci Zoom"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="font-mono text-[10px] font-bold text-gray-900 px-1.5 w-11 text-center">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                onClick={handleZoomIn}
+                className="p-1 hover:bg-white rounded text-gray-650"
+                title="Aumenta Zoom"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Page Display Layout Mode */}
+          <div className="bg-gray-50 border border-gray-200 p-1 rounded flex space-x-1">
+            <button
+              onClick={() => setViewMode("book")}
+              className={`p-1.5 px-2.5 rounded-sm text-[10px] font-bold uppercase transition-all flex items-center space-x-1 cursor-pointer ${
+                viewMode === "book"
+                  ? "bg-black text-white"
+                  : "text-gray-500 hover:text-black hover:bg-gray-150"
+              }`}
+              title="Visualizza come libro"
+            >
+              <BookOpen className="w-3 h-3" />
+              <span>Singola</span>
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 px-2.5 rounded-sm text-[10px] font-bold uppercase transition-all flex items-center space-x-1 cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-black text-white"
+                  : "text-gray-500 hover:text-black hover:bg-gray-150"
+              }`}
+              title="Visualizza tutte le pagine"
+            >
+              <Grid className="w-3 h-3" />
+              <span>Panoramica</span>
+            </button>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={handlePrint}
+              className="p-1.5 bg-white border border-gray-250 hover:bg-gray-50 text-gray-800 rounded shadow-2xs transition-colors cursor-pointer"
+              title="Stampa Brochure"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleDownload}
+              className="p-1.5 bg-white border border-gray-250 hover:bg-gray-50 text-gray-800 rounded shadow-2xs transition-colors cursor-pointer"
+              title="Esporta in file di testo"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </div>
+
         </div>
       </div>
 
-      {/* RENDER - BOOK MODE */}
-      {viewMode === "book" && (
-        <div className="max-w-md mx-auto px-4 flex flex-col items-center">
-          {/* Main Book Card */}
-          <div className="w-full aspect-[3/4.2] bg-white rounded-lg border border-gray-250 shadow-md overflow-hidden relative flex flex-col justify-between p-6 sm:p-8 bg-sea-shell select-none">
-            
-            {/* Page Header (watercolor and decor logic) */}
-            {currentPage !== 1 && currentPage !== 2 && (
-              <div className="w-full">
-                <CoralHeader />
-              </div>
+      {/* 2. MAIN DOCUMENT VIEWPORT WORKSPACE - Expanded to full width with floating sliders */}
+      <div className="flex flex-row min-h-[850px] md:h-[880px] overflow-hidden bg-gray-100 relative">
+        
+        {/* WORKSPACE MIDDLE VIEWPORT - Full container with elegant floaters */}
+        <main className="flex-1 p-3 md:p-6 flex items-center justify-center overflow-y-auto scrollbar-thin relative lg:px-16 bg-gray-50">
+          
+          {/* SEARCH BAR FLOATING BADGE inside document viewport */}
+          <div className="absolute top-4 right-4 sm:right-6 z-20 w-fit max-w-xs flex items-center bg-white border border-gray-200 rounded px-2.5 py-1.5 shadow-sm">
+            <Search className="w-3.5 h-3.5 text-gray-400 mr-2" />
+            <input 
+              type="text" 
+              placeholder="Cerca nella brochure..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="text-xs focus:outline-hidden bg-transparent text-gray-800 placeholder-gray-400 w-32 sm:w-40 py-0.5"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="text-[10px] text-gray-400 hover:text-black font-bold ml-1.5"
+              >
+                ✕
+              </button>
             )}
-
-            {/* Page Content Router */}
-            <div className="flex-1 my-2 overflow-y-auto pr-1">
-              {currentPage === 1 && <Page1Cover />}
-              {currentPage === 2 && <Page2Welcome />}
-              {currentPage === 3 && <Page3CaffetteriaBibite />}
-              {currentPage === 4 && <Page4RosticceriaPatatine />}
-              {currentPage === 5 && <Page5BirreBottiglie />}
-              {currentPage === 6 && <Page6CocktailsGelati />}
-              {currentPage === 7 && <Page7GelatiSammontana />}
-              {currentPage === 8 && <Page8GelatiEventi />}
-            </div>
-
-            {/* Page Footer decor */}
-            {currentPage !== 1 && currentPage !== 2 && (
-              <div className="w-full">
-                <CoralFooter />
-              </div>
-            )}
-
-            {/* Static Tiny Page Num */}
-            <div className="text-center text-xs font-mono font-bold text-gray-400 pt-2 border-t border-gray-100">
-              Pagina {currentPage} di {totalPages}
-            </div>
           </div>
 
-          {/* Book Navigation controls */}
-          <div className="flex items-center space-x-6 mt-6">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className={`p-3 rounded-md bg-white border border-gray-300 text-gray-700 shadow-xs transition-all hover:bg-gray-50 ${
-                currentPage === 1 ? "opacity-25 cursor-not-allowed" : "active:scale-95 cursor-pointer"
-              }`}
-              id="prev-page-btn"
-            >
-              <ChevronLeft className="w-5 h-5 text-black" />
-            </button>
-            <span className="text-gray-700 text-xs font-bold font-mono">
-              PAG. {currentPage} / {totalPages}
-            </span>
-            <button
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className={`p-3 rounded-md bg-white border border-gray-300 text-gray-700 shadow-xs transition-all hover:bg-gray-50 ${
-                currentPage === totalPages ? "opacity-25 cursor-not-allowed" : "active:scale-95 cursor-pointer"
-              }`}
-              id="next-page-btn"
-            >
-              <ChevronRight className="w-5 h-5 text-black" />
-            </button>
-          </div>
-        </div>
-      )}
+          {/* RENDER MODE A: SINGLE PAGE VIEW (BOOK LAYOUT) WITH ZOOM AND MAXIMUM WIDTH */}
+          {viewMode === "book" && (
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-6xl relative pt-10 sm:pt-0">
+              {/* Previous Page Button - Left of layout (static space on desktop, styled cleanly) */}
+              <button
+                onClick={handlePrev}
+                disabled={currentPage === 1}
+                className="hidden sm:flex shrink-0 p-3.5 sm:p-4 rounded-full bg-white border border-gray-200 text-gray-850 hover:bg-black hover:text-white disabled:opacity-20 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-sm duration-150 transition-all cursor-pointer z-10"
+                title="Pagina Precedente"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
 
-      {/* RENDER - GRID MODE (Shows all 8 pages as beautiful catalog sheets) */}
-      {viewMode === "grid" && (
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map(pageIndex => (
-            <div
-              key={pageIndex}
-              className="w-full aspect-[3/4.2] bg-white rounded-lg border border-gray-250 shadow-sm overflow-hidden relative flex flex-col justify-between p-5 bg-sea-shell shadow-xs"
-            >
-              {pageIndex !== 1 && pageIndex !== 2 && (
-                <div className="scale-90 origin-top">
-                  <CoralHeader />
-                </div>
-              )}
-
-              <div className="flex-1 my-2 overflow-y-auto text-[13px] pr-0.5">
-                {pageIndex === 1 && <Page1Cover />}
-                {pageIndex === 2 && <Page2Welcome />}
-                {pageIndex === 3 && <Page3CaffetteriaBibite />}
-                {pageIndex === 4 && <Page4RosticceriaPatatine />}
-                {pageIndex === 5 && <Page5BirreBottiglie />}
-                {pageIndex === 6 && <Page6CocktailsGelati />}
-                {pageIndex === 7 && <Page7GelatiSammontana />}
-                {pageIndex === 8 && <Page8GelatiEventi />}
+              {/* PDF Document Card */}
+              <div 
+                style={{ transform: `scale(${zoom})`, transformOrigin: "center center" }}
+                className="transition-transform duration-200 shadow-xl border border-gray-200 w-full max-w-4xl min-h-[750px] sm:min-h-[800px] md:min-h-[820px] rounded overflow-hidden flex flex-col justify-between bg-[#FCFAF5]"
+              >
+                <BrochurePage page={BROCHURE_PAGES[currentPage - 1]} searchQuery={searchQuery} />
               </div>
 
-              {pageIndex !== 1 && pageIndex !== 2 && (
-                <div className="scale-90 origin-bottom">
-                  <CoralFooter />
-                </div>
-              )}
+              {/* Next Page Button - Right of layout (static space on desktop, styled cleanly) */}
+              <button
+                onClick={handleNext}
+                disabled={currentPage === BROCHURE_PAGES.length}
+                className="hidden sm:flex shrink-0 p-3.5 sm:p-4 rounded-full bg-white border border-gray-200 text-gray-855 hover:bg-black hover:text-white disabled:opacity-20 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-sm duration-150 transition-all cursor-pointer z-10"
+                title="Pagina Successiva"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
 
-              <div className="text-center text-xs font-mono font-bold text-gray-400 pt-1.5 border-t border-gray-100">
-                Pagina {pageIndex}
+              {/* Mobile-only elegant bottom navigation row */}
+              <div className="flex sm:hidden items-center justify-center space-x-6 mt-4 w-full">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentPage === 1}
+                  className="flex items-center space-x-1.5 p-2 px-5 rounded-full bg-white border border-gray-250 text-gray-800 hover:bg-black hover:text-white disabled:opacity-25 shadow-xs text-xs font-bold transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" /> <span>Precedente</span>
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={currentPage === BROCHURE_PAGES.length}
+                  className="flex items-center space-x-1.5 p-2 px-5 rounded-full bg-white border border-gray-250 text-gray-800 hover:bg-black hover:text-white disabled:opacity-25 shadow-xs text-xs font-bold transition-all"
+                >
+                  <span>Successivo</span> <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
+
+          {/* RENDER MODE B: PANORAMIC VIEW (GRID LAYOUT) */}
+          {viewMode === "grid" && (
+            <div className="w-full h-full overflow-y-auto p-2 pt-14">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 justify-items-center max-w-7xl mx-auto">
+                {BROCHURE_PAGES.map(page => (
+                  <div 
+                    key={page.pageNumber}
+                    className="shadow-md border border-gray-200 w-full max-w-4xl min-h-[750px] rounded overflow-hidden flex flex-col justify-between bg-[#FCFAF5]"
+                  >
+                    <BrochurePage page={page} searchQuery={searchQuery} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
     </div>
   );
 };
 
 /* =========================================================================
-   INDIVIDUAL PHYSICAL PAGES REPRODUCTIONS
-   Laying out menu text and visual styles exactly as screen-shot, 
-   but beautifully rendering it vector/HTML for responsive scalability.
+   INDIVIDUAL COMPONENT FOR A RENDERED BROCHURE PAGE SHEET
+   - This dynamically parses the structure config and loads live data!
+   - Solves the user's issue by retrieving 100% of items assigned.
    ========================================================================= */
-
-// --- Page 1: Cover ---
-const Page1Cover: React.FC = () => {
+const BrochurePage: React.FC<{ page: PageStructure; searchQuery: string }> = ({ page, searchQuery }) => {
   return (
-    <div className="h-full flex flex-col items-center justify-between py-6">
-      {/* Cover Corals & Stars artwork */}
-      <div className="w-full transform scale-125 my-1.5">
+    <div className="h-full flex flex-col justify-between p-5 md:p-6 select-none bg-sea-shell relative">
+      
+      {/* Page Header (watercolor visual decor element on active menus) */}
+      {page.type !== "cover" && (
+        <div className="w-full scale-90 mb-1">
+          <CoralHeader />
+        </div>
+      )}
+
+      {/* Main Page Layout Content Router */}
+      <div className="flex-1 overflow-y-auto pr-0.5 pb-2 no-scrollbar">
+        {page.type === "cover" && <RenderCover />}
+        {page.type === "info" && <RenderWelcome />}
+        {page.type === "items" && (
+          <RenderItems categories={page.categories || []} title={page.title} subtitle={page.subtitle} searchQuery={searchQuery} showPromo={page.showPromoCard} />
+        )}
+      </div>
+
+      {/* Page Footer (watercolor visual decor on active menus) */}
+      {page.type !== "cover" && (
+        <div className="w-full scale-80 mt-1">
+          <CoralFooter />
+        </div>
+      )}
+
+      {/* Footer page number indicator */}
+      <div className="text-center font-mono font-bold text-[10px] text-gray-400 mt-2 border-t border-gray-150/60 pt-1.5">
+        MOLO 18 • Pagina {page.pageNumber} di {BROCHURE_PAGES.length}
+      </div>
+    </div>
+  );
+};
+
+// --- Cover Content Renderer ---
+const RenderCover = () => {
+  return (
+    <div className="h-full flex flex-col items-center justify-between py-8">
+      {/* Top Graphic Coral logo in black-minimal styling */}
+      <div className="w-full mb-2">
         <CoralHeader />
       </div>
 
-      {/* Main Large Title */}
-      <div className="text-center my-auto">
-        <h1 className="font-display text-[72px] font-bold text-cyan-900 tracking-tight leading-none drop-shadow-xs">
-          Menù
+      {/* Center Display Logo Typography */}
+      <div className="text-center my-auto flex flex-col items-center">
+        <span className="text-[11px] font-sans font-black uppercase tracking-widest text-amber-600 bg-amber-55 border border-amber-200 px-3 py-1 rounded-sm mb-4">
+          LIDO BAIA AZZURRA
+        </span>
+        
+        <h1 className="font-sans text-5xl font-black text-gray-900 tracking-tighter leading-none uppercase">
+          MOLO 18
         </h1>
-        <div className="w-16 h-1 bg-cyan-700/30 mx-auto mt-4 rounded-full"></div>
+        
+        <div className="h-1 bg-black w-24 my-6 rounded"></div>
+        
+        <h2 className="font-sans text-3xl font-bold tracking-tight text-gray-800">
+          Listino Sapori
+        </h2>
+        
+        <p className="text-[11px] text-gray-400 font-mono tracking-wider uppercase mt-3">
+          Spiaggia, Caffetteria, Bar, Cocktail d'Autore & Gelateria
+        </p>
       </div>
 
-      {/* Bottom Corals artwork */}
-      <div className="w-full transform scale-125">
+      {/* Bottom wave graphic */}
+      <div className="w-full mt-4">
         <CoralFooter />
       </div>
     </div>
   );
 };
 
-// --- Page 2: Welcome / Logos ---
-const Page2Welcome: React.FC = () => {
+// --- Welcome / Welcome Info Content Renderer ---
+const RenderWelcome = () => {
   return (
-    <div className="h-full flex flex-col items-center justify-between py-6">
-      <div className="w-full text-center">
-        <div className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Sparkles className="w-6 h-6 text-cyan-600" />
-        </div>
-        <p className="font-display font-medium text-cyan-600/70 text-sm italic">Benvenuti a</p>
-      </div>
-
-      {/* Custom rendered logos matching the original layout */}
-      <div className="my-auto space-y-12 text-center">
-        {/* LOGO: Baia Azzurra 2026 */}
+    <div className="h-full flex flex-col justify-between py-4 select-none">
+      
+      {/* Logos group */}
+      <div className="text-center space-y-4">
+        {/* Double Brand Identity */}
         <div className="flex flex-col items-center">
-          <div className="flex items-center space-x-1 border-b-2 border-cyan-600/20 pb-3 mb-2">
-            <span className="text-[38px] font-display font-extrabold text-cyan-800 leading-none">B</span>
-            <span className="text-[38px] font-sans font-semibold tracking-wider text-cyan-600 leading-none">A</span>
-            <div className="h-9 w-[1.5px] bg-cyan-600/30 mx-1"></div>
-            <div className="text-left">
-              <span className="block font-display text-2xl font-bold text-cyan-850 leading-none">Baia</span>
-              <span className="block font-sans text-[13px] tracking-widest text-cyan-600 font-extrabold uppercase leading-none">Azzurra</span>
+          <div className="flex items-center space-x-1.5 border-b border-gray-200 pb-2 mb-1.5">
+            <span className="text-3xl font-black text-gray-900 leading-none">B</span>
+            <span className="text-3xl font-semibold tracking-wider text-gray-500 leading-none">A</span>
+            <div className="h-6 w-[1.5px] bg-gray-200 mx-1"></div>
+            <div className="text-left leading-none">
+              <span className="block font-extrabold text-lg text-gray-950 uppercase tracking-tight leading-none">Baia</span>
+              <span className="block font-sans text-[10px] tracking-widest text-gray-500 font-bold uppercase leading-none">Azzurra</span>
             </div>
           </div>
-          <p className="text-amber-500 font-bold text-xs uppercase tracking-widest">Estate 2026</p>
+          <p className="text-amber-600 font-black text-[9px] uppercase tracking-widest">Estate 2026</p>
         </div>
 
-        {/* LOGO: Molo 18 */}
-        <div className="flex flex-col items-center pt-4">
-          <h2 className="font-display text-6xl font-semibold italic text-sky-700 leading-none tracking-tight">
-            Molo18
+        {/* Brand secondary logo */}
+        <div className="flex flex-col items-center pt-2">
+          <h2 className="font-sans text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">
+            Molo 18
           </h2>
-          <p className="text-xs font-bold tracking-widest text-slate-400 mt-2 uppercase">
-            BAIAZZURRA
+          <p className="text-[10px] font-bold tracking-widest text-gray-400 mt-1 uppercase">
+            BAIA AZZURRA
           </p>
         </div>
       </div>
 
-      {/* Bottom Corals artwork */}
-      <div className="w-full transform scale-125">
-        <CoralFooter />
-      </div>
-    </div>
-  );
-};
-
-// --- Page 3: Caffetteria & Bibite ---
-const Page3CaffetteriaBibite: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      {/* Section: Caffetteria */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Bar Caffetteria
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
+      {/* Structured Guidelines and service notes */}
+      <div className="bg-white border border-gray-200 rounded-md p-4 space-y-3.5 my-auto shadow-3xs">
+        <div className="flex items-center space-x-2 border-b border-gray-100 pb-1.5">
+          <Award className="w-4 h-4 text-black" />
+          <span className="text-xs font-black text-gray-950 uppercase tracking-wider">Servizio Ombrellone</span>
         </div>
 
-        <div className="space-y-1">
-          <BookItem name="Caffè seddio" p1="1,50" p2="2,00" />
-          <BookItem name="Caffè freddo o shakerato" p1="2,00" p2="2,50" />
-          <BookItem name="Caffè nocciola" p1="2,50" p2="2,50" />
-          <BookItem name="Caffè deca" p1="1,50" p2="2,00" />
-          <BookItem name="Latte (bicch.)" p1="1,50" p2="2,00" />
-          <BookItem name="Cappuccino" p1="2,00" p2="2,50" />
-          <BookItem name="Cappuccino freddo" p1="2,00" p2="2,50" />
-          <BookItem name="Crema caffè o granita caffè" p1="2,50" p2="3,00" />
-          <BookItem name="Acqua piccola" p1="1,00" p2="1,00" />
-          <BookItem name="Acqua grande" p1="2,00" p2="2,00" />
-          <BookItem name="Spremuta" p1="3,50" p2="4,00" />
-          <BookItem name="Succhi di frutta" p1="2,50" p2="3,00" />
-          <BookItem name="Ginseng" p1="1,50" p2="2,00" />
-          <BookItem name="Caffè ristorante" p1="1,50" p2="1,50" />
-          <BookItem name="Granita" p1="2,00" p2="2,50" />
-          <BookItem name="Caffè bagnini" p1="1,00" p2="1,00" />
-          <BookItem name="Latte al cioccolato brick" p1="1,50" p2="2,00" />
-          <BookItem name="Orzo" p1="1,50" p2="2,00" />
-          <BookItem name="Orzata (bicch.)" p1="2,00" p2="2,50" />
-          <BookItem name="Menta (bicch.)" p1="2,00" p2="2,50" />
-          <BookItem name="Caffè macchiato" p1="1,50" p2="2,00" />
-          <BookItem name="Pasta di mandorle" p1="1,00" p2="1,00" />
-          <BookItem name="Caffè schiumato" p1="1,50" p2="2,00" />
-          <BookItem name="Ginseng schiumato" p1="1,50" p2="1,50" />
-          <BookItem name="Orzo schiumato" p1="1,50" p2="2,50" />
-          <BookItem name="Latte macchiato" p1="2,00" p2="2,50" />
-          <BookItem name="Sarchiapone" p1="1,50" p2="-" />
-          <BookItem name="Hanuta" p1="1,50" p2="1,50" />
-          <BookItem name="Carte pokemon" p1="2,00" p2="-" />
-          <BookItem name="Melody pop" p1="1,50" p2="-" />
-          <BookItem name="Pringles" p1="4,00" p2="-" />
-        </div>
-      </div>
-
-      {/* Section: Bibite */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Bibite
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <BookItem name="Tè freddo limone" p1="2,50" p2="3,00" />
-          <BookItem name="Tè freddo a pesca" p1="2,50" p2="3,00" />
-          <BookItem name="Cedrata" p1="2,50" p2="3,00" />
-          <BookItem name="Coca Cola" p1="2,00" p2="2,50" />
-          <BookItem name="Coca Cola zero" p1="2,00" p2="2,50" />
-          <BookItem name="Bibite in lattina spiaggia" p1="1,50" p2="-" />
-          <BookItem name="Red Bull spiaggia" p1="4,50" p2="-" />
-          <BookItem name="Schweppes limone" p1="2,50" p2="3,00" />
-          <BookItem name="Schweppes arancia" p1="2,50" p2="3,00" />
-          <BookItem name="Chinotto" p1="2,00" p2="2,50" />
-          <BookItem name="Red Bull" p1="3,00" p2="3,50" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Page 4: Pasticceria Rosticceria & Patatine ---
-const Page4RosticceriaPatatine: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      {/* Section extras from top of page 4 */}
-      <div className="space-y-1">
-        <BookItem name="Sprite" p1="2,50" p2="2,50" />
-        <BookItem name="Bitter" p1="2,50" p2="3,00" />
-        <BookItem name="San Pellegrino" p1="2,50" p2="3,00" />
-        <BookItem name="Crodino" p1="2,50" p2="3,00" />
-      </div>
-
-      {/* Section: Pasticceria Rosticceria */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Pasticceria Rosticceria
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Cornetto vuoto" p1="1,50" p2="1,50" />
-          <BookItem name="Pasticciotto leccese" p1="2,00" p2="2,00" />
-          <BookItem name="Treccia nutella" p1="2,00" p2="2,00" />
-          <BookItem name="Pizzetta tonda" p1="2,00" p2="2,00" />
-          <BookItem name="Hot Dog" p1="2,50" p2="3,00" />
-          <BookItem name="Donuts Oreo" p1="2,50" p2="2,50" />
-          <BookItem name="Panino napoletano" p1="2,50" p2="2,50" />
-          <BookItem name="Graffa" p1="2,00" p2="2,00" />
-          <BookItem name="Cornetto alla nutella" p1="1,50" p2="2,50" />
-          <BookItem name="Pizzetta (tranci)" p1="2,50" p2="2,50" />
-          <BookItem name="Cornetto vuoto vegano" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto crema e amarena" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto crema" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto pistacchio" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto integrale miele" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto vegano melograno" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto rodrigo frutti rossi" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto marmellata albicocca" p1="1,50" p2="1,50" />
-          <BookItem name="Cornetto rodrigo cioccolato" p1="1,50" p2="1,50" />
-          <BookItem name="Treccia cioccolato" p1="2,00" p2="2,00" />
-          <BookItem name="Polacca" p1="2,00" p2="2,00" />
-          <BookItem name="Fagottino cioccolato" p1="1,50" p2="1,50" />
-          <BookItem name="Treccia noci" p1="2,00" p2="2,00" />
-          <BookItem name="Donuts milka" p1="2,50" p2="2,50" />
-          <BookItem name="Graffa a nutella" p1="2,50" p2="-" />
-          <BookItem name="Muffin + Waffel" p1="2,50" p2="2,50" />
-          <BookItem name="Pasta di mandorle" p1="1,00" p2="1,00" />
-          <BookItem name="Tramezzino" p1="3,50" p2="3,50" />
-        </div>
-      </div>
-
-      {/* Section: Patatine */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Patatine
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="San Carlo (busta)" p1="2,00" p2="2,00" />
-          <BookItem name="Pringles piccola" p1="2,00" p2="2,00" />
-          <BookItem name="Pringles tubo" p1="3,50" p2="4,00" />
-          <BookItem name="Patatine+buono busta grande 90" p1="2,00" p2="-" />
-          <BookItem name="Patatine+buono busta grande 50" p1="1,50" p2="-" />
-          <BookItem name="Patatine+buono sorpresa 40" p1="2,00" p2="-" />
-          <BookItem name="Patatine+buono tubo" p1="3,00" p2="2,00" />
-          <BookItem name="Crostini (busta)" p1="2,00" p2="-" />
-          <BookItem name="Cipster" p1="3,50" p2="-" />
-          <BookItem name="Ritz" p1="3,50" p2="-" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Page 5: Birre, Liquori, Bottiglie ---
-const Page5BirreBottiglie: React.FC = () => {
-  return (
-    <div className="space-y-5">
-      {/* Section: Birre */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Birre
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Nastro azzurro 33cl" p1="2,50" p2="3,00" />
-          <BookItem name="Corona" p1="3,50" p2="4,00" />
-          <BookItem name="Tennent's" p1="4,00" p2="4,00" />
-          <BookItem name="Chill lemon" p1="2,50" p2="3,00" />
-          <BookItem name="Ceres" p1="4,00" p2="4,50" />
-          <BookItem name="Ichunusa" p1="3,50" p2="4,50" />
-          <BookItem name="Nastro grande" p1="4,00" p2="-" />
-          <BookItem name="Heineken grande" p1="4,50" p2="-" />
-          <BookItem name="Heineken 33cl" p1="3,50" p2="-" />
-          <BookItem name="Peroni grande" p1="4,00" p2="-" />
-        </div>
-      </div>
-
-      {/* Section: Liquori e Amari */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Liquori e Amari
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Liquori nazionali 0,04" p1="4,00" p2="5,00" />
-          <BookItem name="Liquori esteri 0,04" p1="6,00" p2="6,00" />
-          <BookItem name="Amari" p1="4,00" p2="5,00" />
-          <BookItem name="Liquori di marca esteri" p1="8,00" p2="8,00" />
-          <BookItem name="Champagne" p1="50,00" p2="80,00" />
-        </div>
-      </div>
-
-      {/* Section: Bottiglie */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-[15px] font-extrabold text-cyan-900 uppercase tracking-wider">
-            Bottiglie
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Champagne Ca Del Bosco" p1="65,00" p2="80,00" />
-          <BookItem name="Champagne Ferrari" p1="35,00" p2="-" />
-          <BookItem name="Champagne Berlucchi" p1="45,00" p2="-" />
-          <BookItem name="Spumante Brut Cuvee Blanc" p1="10,00" p2="12,00" />
-          <BookItem name="Prosecco Doc Treviso" p1="12,00" p2="15,00" />
-          <BookItem name="Prosecco Superiore Docg Treviso" p1="14,00" p2="16,00" />
-          <BookItem name="Prosecco Millesimo" p1="15,00" p2="19,00" />
-          <BookItem name="Prosecco Astoria Valdobbiadene" p1="18,00" p2="21,00" />
-          <BookItem name="Vino Primitivo" p1="18,00" p2="-" />
-          <BookItem name="Vino Falerno" p1="15,00" p2="-" />
-          <BookItem name="Vino Falanchina" p1="10,00" p2="12,00" />
-          <BookItem name="Calice vino" p1="5,00" p2="-" />
-          <BookItem name="Calice vino doc" p1="7,05" p2="-" />
-        </div>
-      </div>
-
-      {/* Section: Varie */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-[14px] font-extrabold text-cyan-800 uppercase tracking-wider">
-            Varie (Accendini, Carte, ecc.)
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-        <div className="space-y-0.5">
-          <BookItem name="Accendino antivento" p1="1,50" p2="1,50" />
-          <BookItem name="Accendino normale" p1="1,50" p2="1,50" />
-          <BookItem name="Accendino" p1="1,00" p2="1,00" />
-          <BookItem name="Carte da gioco napoletane" p1="7,00" p2="7,00" />
-          <BookItem name="Carte da gioco francesi Modiano" p1="14,00" p2="14,00" />
-          <BookItem name="Rizla kingsize" p1="2,00" p2="2,00" />
-          <BookItem name="Rizla combi pack" p1="3,00" p2="3,00" />
-          <BookItem name="Rizla filtri ultra slim" p1="2,00" p2="2,00" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Page 6: Cocktails & Gelati ---
-const Page6CocktailsGelati: React.FC = () => {
-  return (
-    <div className="space-y-5">
-      {/* Page extras at top */}
-      <div className="space-y-0.5">
-        <BookItem name="Rizla cartine regular" p1="1,00" p2="-" />
-        <BookItem name="Rizla slim x-long" p1="1,00" p2="-" />
-        <BookItem name="David Ross" p1="1,20" p2="1,20" />
-      </div>
-
-      {/* Section: Cocktail e Aperitivi */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Cocktail e Aperitivi
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Cocktail" p1="7,00" p2="7,00" />
-          <BookItem name="Analcolici accompagnati" p1="5,00" p2="6,00" />
-          <BookItem name="Alcolici accompagnati" p1="7,00" p2="8,00" />
-          <BookItem name="Prosecco" p1="3,00" p2="3,50" />
-          <BookItem name="Spritz Aperol e Campari" p1="6,00" p2="7,00" />
-          <BookItem name="Midori Sour" p1="6,00" p2="7,00" />
-          <BookItem name="Apertass" p1="3,50" p2="4,00" />
-          <BookItem name="Disaronno sour" p1="6,00" p2="7,00" />
-          <BookItem name="Tris di vodka" p1="6,00" p2="7,00" />
-          <BookItem name="Negroni" p1="7,00" p2="8,00" />
-          <BookItem name="Negroni sbagliato" p1="7,00" p2="8,00" />
-          <BookItem name="Gin Tonic linea base" p1="7,00" p2="8,00" />
-          <BookItem name="Stuzzichini secchi" p1="2,00" p2="2,00" />
-          <BookItem name="Aperitivo caldo (5pz)" p1="2,00" p2="2,00" />
-          <BookItem name="Gin tonic Malfy" p1="8,00" p2="-" />
-          <BookItem name="Gin tonic Portofino" p1="10,00" p2="-" />
-          <BookItem name="Gin Mare" p1="10,00" p2="-" />
-          <BookItem name="Gin tonic Capri" p1="7,00" p2="-" />
-          <BookItem name="Gin Henrick" p1="9,00" p2="-" />
-        </div>
-      </div>
-
-      {/* Section: Gelati */}
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-600/20 pb-1 mb-2">
-          <h4 className="font-display text-lg font-extrabold text-cyan-900 uppercase tracking-wider">
-            Gelati
-          </h4>
-          <div className="flex space-x-4 text-[10px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Caffè zero algida" p1="3,50" p2="3,50" />
-          <BookItem name="Cornetto esagerato XXL algida" p1="3,00" p2="3,00" />
-          <BookItem name="Cornetto choc ball algida" p1="3,00" p2="3,00" />
-          <BookItem name="Cornetto super cuore croccante" p1="3,00" p2="3,00" />
-          <BookItem name="Cornetto royal amarena algida" p1="3,00" p2="3,00" />
-          <BookItem name="Cornetto SG e SL algida" p1="2,60" p2="2,60" />
-          <BookItem name="Magnum caffè bianco mandorle" p1="3,00" p2="3,00" />
-          <BookItem name="Magnum speciali pistacchio" p1="3,30" p2="3,30" />
-          <BookItem name="Bomboniera algida" p1="2,50" p2="2,50" />
-          <BookItem name="King cone" p1="3,50" p2="3,50" />
-          <BookItem name="Croccante amarena algida" p1="1,80" p2="1,80" />
-          <BookItem name="Liuk algida" p1="1,80" p2="1,80" />
-          <BookItem name="Cremino algida" p1="1,80" p2="1,80" />
-          <BookItem name="Volcanix new" p1="2,70" p2="2,70" />
-          <BookItem name="Remix cokie" p1="2,50" p2="2,50" />
-          <BookItem name="Minecraft new bimbi" p1="2,00" p2="2,00" />
-          <BookItem name="New twister" p1="2,30" p2="2,30" />
-          <BookItem name="Fior di fragola algida" p1="1,80" p2="1,80" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Page 7: Gelati Sammontana & Algida ---
-const Page7GelatiSammontana: React.FC = () => {
-  return (
-    <div className="space-y-4 text-xs">
-      <div className="space-y-0.5 mb-3">
-        <BookItem name="Lemonissimo algida" p1="1,80" p2="1,80" />
-        <BookItem name="Iceberg algida" p1="1,80" p2="1,80" />
-        <BookItem name="Bikini algida" p1="2,20" p2="2,20" />
-        <BookItem name="Cucciolone maxi algida" p1="2,80" p2="-" />
-        <BookItem name="Solero algida" p1="2,20" p2="2,20" />
-        <BookItem name="Coppa rica amarena algida" p1="2,50" p2="2,50" />
-        <BookItem name="Coppa kimbo algida" p1="2,50" p2="2,50" />
-        <BookItem name="Ghiacciolo algida" p1="1,00" p2="1,00" />
-        <BookItem name="Calippo algida" p1="2,20" p2="2,20" />
-        <BookItem name="Twister algida" p1="1,80" p2="1,80" />
-        <BookItem name="Treasure algida" p1="2,00" p2="2,00" />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between border-b border-cyan-300 pb-1 mb-2">
-          <h4 className="font-display text-sm font-extrabold text-cyan-850 uppercase tracking-widest">
-            Sammontana Gelati
-          </h4>
-          <div className="flex space-x-3 text-[9px] font-bold text-cyan-800">
-            <span>BANCO</span>
-            <span>TAVOLO</span>
-          </div>
-        </div>
-
-        <div className="space-y-0.5">
-          <BookItem name="Cornetti 5 stelle sammontana" p1="2,70" p2="2,70" />
-          <BookItem name="Gruvi sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Bis sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Fruttiamo sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Amando frutta sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Amando biscuit sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Amando cornetto classico amarena" p1="2,50" p2="2,50" />
-          <BookItem name="Coppa oro diverse tipologie" p1="2,50" p2="2,50" />
-          <BookItem name="Intrigo sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Granulato sammontana" p1="1,80" p2="1,80" />
-          <BookItem name="Sorbetto sammontana" p1="1,50" p2="1,50" />
-          <BookItem name="Stecco moro sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Sorbello sammontana" p1="1,60" p2="1,60" />
-          <BookItem name="Stecco ducale sammontana" p1="2,70" p2="2,70" />
-          <BookItem name="XL cono sammontana" p1="2,00" p2="2,00" />
-          <BookItem name="Bis caffè croccantino pistacchio" p1="2,50" p2="2,50" />
-          <BookItem name="Amando cacao e lampone" p1="2,50" p2="2,50" />
-          <BookItem name="Stecchi frutta sammontana" p1="2,30" p2="2,30" />
-          <BookItem name="Blocco sammontana" p1="2,50" p2="2,50" />
-          <BookItem name="Sansonì sammontana" p1="2,60" p2="2,60" />
-          <BookItem name="Prezzemolo sammontana" p1="2,30" p2="2,30" />
-          <BookItem name="Stecco unicorno sammontana (sm)" p1="1,30" p2="1,30" />
-          <BookItem name="Loacker sammontana" p1="1,60" p2="1,60" />
-          <BookItem name="Stecco unicorno sammontana (lg)" p1="2,20" p2="2,20" />
-          <BookItem name="Mallow sammontana" p1="1,80" p2="1,80" />
-          <BookItem name="Donny sammontana" p1="1,80" p2="1,80" />
-          <BookItem name="Ghiacciolo sammontana" p1="1,00" p2="1,00" />
-          <BookItem name="Duetto sammontana" p1="2,00" p2="2,00" />
-          <BookItem name="Blanco sammontana" p1="1,80" p2="1,80" />
-          <BookItem name="Stecco blocco" p1="2,50" p2="2,50" />
-          <BookItem name="Longjonh gusti sammontana" p1="2,50" p2="-" />
-          <BookItem name="Coppa del nonno" p1="3,00" p2="3,00" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- Page 8: Ice cream & Events call ---
-const Page8GelatiEventi: React.FC = () => {
-  return (
-    <div className="space-y-6 h-full flex flex-col justify-between">
-      {/* Upper Icecream list */}
-      <div className="space-y-0.5">
-        <BookItem name="Pirulo" p1="2,80" p2="-" />
-        <BookItem name="Pirulo tropical" p1="2,50" p2="-" />
-        <BookItem name="Maxibon" p1="3,00" p2="-" />
-        <BookItem name="Magnum classico algida" p1="3,00" p2="3,00" />
-        <BookItem name="Donut" p1="2,00" p2="-" />
-        <BookItem name="Nuii" p1="3,00" p2="-" />
-        <BookItem name="Torta romantica" p1="25,00" p2="-" />
-        <BookItem name="Vienetta" p1="9,00" p2="-" />
-        <BookItem name="Frigo chuknet algida" p1="2,20" p2="2,50" />
-      </div>
-
-      {/* Decorative promotional call to action card exactly like the screenshots */}
-      <div className="bg-gradient-to-br from-indigo-50 to-pink-50 rounded-2xl p-4 border border-indigo-100 text-center space-y-3 relative overflow-hidden shadow-xs shrink-0">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-pink-200/20 rounded-full blur-xl pointer-events-none"></div>
-
-        <h3 className="font-display text-base font-extrabold text-blue-900 tracking-tight leading-snug">
-          FESTEGGIA CON NOI IL TUO EVENTO
-        </h3>
-        <p className="inline-block bg-blue-950 text-white rounded-lg px-3 py-1 text-[10px] uppercase font-sans font-extrabold tracking-wider">
-          Ti Aspettiamo!
+        <p className="text-[11px] text-gray-500 leading-relaxed font-normal">
+          Gentile Ospite, per favorire il massimo relax e un servizio ottimale, offriamo la consegna di snack, bibite e gelati <strong>direttamente sotto l'ombrellone</strong>. 
         </p>
 
-        {/* Whatsapp link / info */}
-        <div className="flex items-center justify-center space-x-1.5 pt-1">
-          <span className="text-emerald-500 font-bold text-sm">💬</span>
-          <a
-            href="https://wa.me/393484448543"
-            className="font-mono font-bold text-slate-800 text-sm hover:text-emerald-600 transition-colors"
-          >
-            348 444 8543
-          </a>
+        {/* Useful tips details in greyscale layout */}
+        <div className="space-y-2 text-[10px] text-gray-400 font-mono">
+          <div className="flex items-start">
+            <span className="mr-1.5 text-gray-900">●</span>
+            <span><strong>Allergeni:</strong> Consulta i codici nei listini (GF = Gluten Free, LF = Senza Lattosio, 🌱 = Vegano). Far presente intolleranze gravi al personale.</span>
+          </div>
+          <div className="flex items-start">
+            <span className="mr-1.5 text-gray-900">●</span>
+            <span><strong>Tariffe:</strong> I prezzi indicati sotto la colonna "Tavolo" o "Spiaggia" includono il servizio di consegna.</span>
+          </div>
+          <div className="flex items-start">
+            <span className="mr-1.5 text-gray-900">●</span>
+            <span><strong>Prenotazioni:</strong> Contatta il bagnino o invia un WhatsApp al <span className="text-gray-900 font-bold font-sans underline cursor-pointer">+39 348 444 8543</span>.</span>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Specialties footer block */}
-      <div className="bg-white rounded-xl p-3 border border-slate-150 text-center shadow-2xs shrink-0">
-        <div className="flex justify-center space-x-2 text-[10px] font-bold text-slate-400 mb-1.5 uppercase tracking-widest">
-          <span>Granita</span>
-          <span>•</span>
-          <span>Crema Caffè</span>
-          <span>•</span>
-          <span>Yogurt</span>
-        </div>
-        <p className="font-display font-semibold italic text-xs text-sky-800 uppercase tracking-widest leading-none">
-          COCKTAIL – AMERICAN BAR
-        </p>
-      </div>
+      <p className="text-center font-mono font-bold text-[9px] text-gray-400 tracking-wider">
+        CON CURA • LIDO BAIA AZZURRA SALENTO
+      </p>
+
     </div>
   );
 };
 
-/* =========================================================================
-   REUSABLE DOTTED-LINE LISTING ITEM
-   ========================================================================= */
-interface BookItemProps {
-  name: string;
-  p1: string;
-  p2?: string;
+// --- Live Items Renderers (Pulls items dynamically) ---
+interface RenderItemsProps {
+  categories: string[];
+  title: string;
+  subtitle?: string;
+  searchQuery: string;
+  showPromo?: boolean;
 }
 
-const BookItem: React.FC<BookItemProps> = ({ name, p1, p2 }) => {
-  return (
-    <div className="flex justify-between items-end py-0.5 text-xs text-slate-800 font-medium">
-      {/* Product Name */}
-      <span className="shrink-0 max-w-[55%] whitespace-nowrap overflow-hidden text-ellipsis font-sans font-medium" title={name}>
-        {name}
-      </span>
+const RenderItems: React.FC<RenderItemsProps> = ({ categories, title, subtitle, searchQuery, showPromo }) => {
+  // Query and filter elements from menuData dynamically.
+  // This guarantees that absolutely every element is loaded and matched accurately.
+  let items = MENU_ITEMS.filter(item => categories.includes(item.category));
 
-      {/* Leader dots line linking name to price */}
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase().trim();
+    items = items.filter(it => 
+      it.name.toLowerCase().includes(query) || 
+      it.category.replace("_", " ").toLowerCase().includes(query)
+    );
+  }
+
+  // Split list dynamically in columns if there are items (> 14) to space columns beautifully like original offset brochure
+  const needsTwoColumns = items.length > 14;
+  const col1Items = needsTwoColumns ? items.slice(0, Math.ceil(items.length / 2)) : items;
+  const col2Items = needsTwoColumns ? items.slice(Math.ceil(items.length / 2)) : [];
+
+  return (
+    <div className="space-y-4">
+      
+      {/* Title Header Section */}
+      <div className="border-b border-gray-200 pb-2 mb-3 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-1.5">
+        <div>
+          <h3 className="font-sans text-base sm:text-lg font-black text-gray-900 uppercase tracking-widest flex items-center">
+            <span className="mr-1.5 text-amber-500 font-sans">✦</span>
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="text-[10px] sm:text-[11px] text-gray-400 font-mono leading-relaxed mt-0.5 italic">
+              {subtitle}
+            </p>
+          )}
+        </div>
+        
+        {/* Price column labels precisely matching the widths in SimpleBrochureItem */}
+        <div className="hidden sm:flex space-x-3 text-right font-mono text-[10px] font-bold uppercase text-gray-400 shrink-0 pb-1">
+          <span className="w-12">Banco</span>
+          <span className="w-12">Tavolo</span>
+        </div>
+      </div>
+
+      {/* List content rendered either single or dual page layout columns */}
+      {items.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <p className="text-xs font-mono font-bold">Nessun prodotto trovato</p>
+          <p className="text-[10px] mt-1 text-gray-300">Modifica i filtri di ricerca</p>
+        </div>
+      ) : needsTwoColumns ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-1 sm:gap-y-2.5 align-top items-start">
+          
+          {/* Column 1 items list */}
+          <div className="space-y-1 sm:space-y-2">
+            {col1Items.map(item => (
+              <SimpleBrochureItem key={item.id} item={item} />
+            ))}
+          </div>
+
+          {/* Column 2 items list */}
+          <div className="space-y-1 sm:space-y-2">
+            {col2Items.map(item => (
+              <SimpleBrochureItem key={item.id} item={item} />
+            ))}
+          </div>
+
+        </div>
+      ) : (
+        <div className="space-y-1 sm:space-y-2 max-w-2xl mx-auto">
+          {items.map(item => (
+            <SimpleBrochureItem key={item.id} item={item} />
+          ))}
+        </div>
+      )}
+
+      {/* If promo visual card is flag enabled (Page 11 only) */}
+      {showPromo && (
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded p-4 border border-gray-200 text-center space-y-2.5 relative overflow-hidden shadow-3xs mt-4">
+          <span className="absolute -top-1 -right-1 bg-amber-500 text-white font-mono font-black text-[7px] rotate-12 px-1 text-center select-none uppercase tracking-widest border border-amber-400">
+            FESTE
+          </span>
+          <h4 className="font-sans text-xs font-black text-gray-900 tracking-wider uppercase">
+            🎉 Festeggia con noi il tuo Evento!
+          </h4>
+          <p className="text-[10px] text-gray-400 max-w-xs mx-auto leading-relaxed">
+            Spiaggia attrezzata, compleanni esclusivi, apericena d'autore al calar del sole pugliese. Contatta la direzione!
+          </p>
+          <div className="flex items-center justify-center space-x-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="font-mono font-extrabold text-xs text-gray-800">
+              WhatsApp: +39 348 444 8543
+            </span>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+// --- Pure Brochure List Row with Clean Dot Leaders and Columns Alignment ---
+interface RenderItemProps {
+  item: MenuItem;
+}
+
+const SimpleBrochureItem: React.FC<RenderItemProps> = ({ item }) => {
+  return (
+    <div className="flex justify-between items-end py-1 sm:py-1.5 text-xs sm:text-sm text-gray-800 font-medium group">
+      
+      {/* Product label & allergy mini badges */}
+      <div className="flex-1 min-w-0 pr-2" title={item.name}>
+        <div className="inline">
+          <span className="font-sans font-bold text-gray-900 break-normal whitespace-normal mr-1.5 text-xs sm:text-sm">
+            {item.name}
+          </span>
+          
+          {/* Diet Badges micro-capsules */}
+          <span className="inline-flex gap-1 scale-90 sm:scale-100 align-middle">
+            {item.isGlutenFree && (
+              <span className="bg-amber-50 text-[9px] text-amber-700 font-black px-1 border border-amber-200 rounded-sm">
+                GF
+              </span>
+            )}
+            {item.isLactoseFree && (
+              <span className="bg-blue-50 text-[9px] text-blue-700 font-black px-1 border border-blue-200 rounded-sm">
+                LF
+              </span>
+            )}
+            {item.isVegan && (
+              <span className="bg-emerald-50 text-[9px] text-emerald-700 font-semibold px-1 border border-emerald-200 rounded-sm leading-none flex items-center py-0.5">
+                🌱
+              </span>
+            )}
+          </span>
+        </div>
+      </div>
+
+      {/* Center leader dotted track */}
       <div className="dot-leader"></div>
 
-      {/* Prices aligned right */}
+      {/* Prices Banco vs Tavolo aligned right with fixed width to prevent wrapping */}
       <div className="flex space-x-3 text-right font-mono font-bold shrink-0">
-        <span className="w-10 text-slate-700">
-          {p1}
+        <span className="w-12 text-gray-600 block text-xs sm:text-[13px]" title="Prezzo al Banco">
+          €{item.bancoPrice.toFixed(2)}
         </span>
-        <span className="w-10 text-cyan-800">
-          {p2 && p2 !== "-" ? p2 : "—"}
+        <span className="w-12 text-gray-950 bg-gray-50 border border-gray-200 px-1 rounded-sm text-xs sm:text-[13px] block" title="Prezzo al Tavolo / Spiaggia">
+          {item.tavoloPrice ? `€${item.tavoloPrice.toFixed(2)}` : "—"}
         </span>
       </div>
     </div>

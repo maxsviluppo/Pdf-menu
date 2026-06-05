@@ -24,7 +24,7 @@
 .dot-leader {
   flex-grow: 1;
   border-bottom: 2px dotted #D1D5DB;
-  margin: 0 8px;
+  margin: 0 3px;
   position: relative;
   bottom: 4px;
 }
