@@ -1,0 +1,6 @@
+{
+  "name": "Menù Baia Azzurra",
+  "description": "Menù Digitale Interattivo per Baia Azzurra - Molo 18. Sfoglia le pagine del menu o cerca piatti in tempo reale e calcola il conto al tavolo o al banco.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

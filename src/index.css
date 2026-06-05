@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom Minimalist effects */
+.bg-watercolor {
+  background-color: #F3F4F6;
+}
+
+.bg-sea-shell {
+  background: #FFFFFF;
+}
+
+.watercolor-border {
+  border-color: #E5E7EB;
+}
+
+/* Dot Leaders for custom look */
+.dot-leader {
+  flex-grow: 1;
+  border-bottom: 2px dotted #D1D5DB;
+  margin: 0 8px;
+  position: relative;
+  bottom: 4px;
+}
+
+/* Custom scrollbars matching clean minimalism */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
